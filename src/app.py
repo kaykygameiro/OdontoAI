@@ -9,22 +9,52 @@ from torchvision import transforms
 from torchvision.models import resnet50
 
 
-# Caminho do checkpoint treinado.
+# Caminho do checkpoint final treinado localmente.
 ROOT_DIR = Path(__file__).resolve().parents[1]
 MODEL_PATH = ROOT_DIR / "models" / "modelo_doencas.pth"
 
-# Extensões aceitas no upload.
+# Formatos aceitos no upload da interface.
 TIPOS_IMAGEM = ["jpg", "jpeg", "png", "bmp", "webp"]
 
-# Descrição simples das classes para exibição educacional.
-DESCRICAO_CLASSES = {
-    "Calculus": "tártaro/cálculo dentário",
-    "Caries": "cárie",
-    "Gingivitis": "gengivite",
-    "Hypodontia": "ausência congênita de dentes",
-    "Mouth_Ulcer": "úlcera/lesão ulcerada na boca",
-    "Tooth_Discoloration": "alteração de coloração dentária",
+# Metricas finais do experimento consolidado para o TCC.
+METRICAS_FINAIS = {
+    "dataset_final": "3.507",
+    "treino": "2.455",
+    "validacao": "528",
+    "total_teste": "524",
+    "acuracia_teste": "96,18%",
+    "f1_macro": "90,78%",
+    "f1_ponderado": "96,06%",
 }
+
+# Nomes amigaveis em portugues. As classes internas do checkpoint nao sao alteradas.
+NOMES_PT = {
+    "Calculus": "Tártaro / cálculo dentário",
+    "Caries": "Cárie",
+    "Gingivitis": "Gengivite",
+    "Hypodontia": "Hipodontia",
+    "Mouth_Ulcer": "Úlcera bucal",
+    "Tooth_Discoloration": "Descoloração dentária",
+}
+
+DESCRICAO_CLASSES = {
+    "Calculus": "Acúmulo mineralizado aderido aos dentes.",
+    "Caries": "Lesão associada à perda mineral da estrutura dentária.",
+    "Gingivitis": "Inflamação gengival observável em imagens intraorais.",
+    "Hypodontia": "Ausência congênita de um ou mais dentes.",
+    "Mouth_Ulcer": "Lesão ulcerada na mucosa oral.",
+    "Tooth_Discoloration": "Alteração visível de coloração dentária.",
+}
+
+AVISO_EDUCACIONAL = (
+    "Este sistema é apenas um apoio educacional e não substitui avaliação "
+    "profissional de um cirurgião-dentista."
+)
+
+EXPLICACAO_PROBABILIDADE = (
+    "A probabilidade exibida representa a distribuição produzida pelo modelo "
+    "entre as classes conhecidas e não deve ser interpretada como certeza clínica."
+)
 
 
 class GradCAM:
@@ -63,10 +93,8 @@ class GradCAM:
         if self.activations is None or self.gradients is None:
             raise RuntimeError("Não foi possível capturar ativações ou gradientes.")
 
-        # Peso de cada canal: média espacial dos gradientes.
+        # Cada canal recebe peso pela média espacial dos gradientes.
         pesos = self.gradients.mean(dim=(2, 3), keepdim=True)
-
-        # Combina os canais das ativações usando os pesos calculados.
         cam = (pesos * self.activations).sum(dim=1, keepdim=True)
         cam = torch.relu(cam)
         cam = cam.squeeze().cpu().numpy()
@@ -81,9 +109,14 @@ class GradCAM:
         return cam
 
     def remover_hooks(self) -> None:
-        """Remove os hooks registrados para evitar efeitos colaterais."""
+        """Remove hooks para evitar efeitos colaterais entre inferências."""
         for handle in self.handles:
             handle.remove()
+
+
+def nome_pt(classe: str) -> str:
+    """Retorna o nome em português sem alterar o identificador interno."""
+    return NOMES_PT.get(classe, classe)
 
 
 @st.cache_resource
@@ -106,16 +139,12 @@ def carregar_modelo() -> tuple[torch.nn.Module, dict, torch.device]:
 
 
 def criar_transform(checkpoint: dict) -> transforms.Compose:
-    """Cria o preprocessamento usando os parâmetros salvos no checkpoint."""
-    image_size = checkpoint["image_size"]
-    mean = checkpoint["mean"]
-    std = checkpoint["std"]
-
+    """Cria o pré-processamento usando os parâmetros salvos no checkpoint."""
     return transforms.Compose(
         [
-            transforms.Resize((image_size, image_size)),
+            transforms.Resize((checkpoint["image_size"], checkpoint["image_size"])),
             transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
+            transforms.Normalize(mean=checkpoint["mean"], std=checkpoint["std"]),
         ]
     )
 
@@ -135,12 +164,12 @@ def predizer_tensor(
     classes: list[str],
     input_tensor: torch.Tensor,
 ) -> tuple[int, str, float, list[tuple[str, float]]]:
-    """Executa inferência e retorna classe prevista, confiança e top 3."""
+    """Executa inferência e retorna classe prevista, probabilidade e top 3."""
     with torch.no_grad():
         logits = model(input_tensor)
         probabilidades = torch.softmax(logits, dim=1).squeeze(0)
 
-    confianca, indice_predito = torch.max(probabilidades, dim=0)
+    probabilidade, indice_predito = torch.max(probabilidades, dim=0)
     top_valores, top_indices = torch.topk(probabilidades, k=min(3, len(classes)))
 
     top3 = [
@@ -152,7 +181,7 @@ def predizer_tensor(
     return (
         indice_predito_int,
         classes[indice_predito_int],
-        float(confianca.item()),
+        float(probabilidade.item()),
         top3,
     )
 
@@ -185,27 +214,49 @@ def gerar_gradcam(
 
 
 def mostrar_sidebar(device: torch.device | None = None) -> None:
-    """Mostra informações resumidas do modelo e da avaliação final."""
+    """Mostra informações resumidas do modelo e do experimento final."""
     st.sidebar.header("Informações do modelo")
-    st.sidebar.write("Modelo utilizado: ResNet-50")
-    st.sidebar.write("Acurácia no teste: 92,45%")
-    st.sidebar.write("Total de imagens no teste: 1.854")
-    st.sidebar.write("Maior confusão observada: Calculus e Gingivitis")
+    st.sidebar.write("MVP/protótipo acadêmico educacional")
+    st.sidebar.write("Modelo utilizado: ResNet-50 com transfer learning")
+    st.sidebar.write(f"Dataset final: {METRICAS_FINAIS['dataset_final']} imagens")
+    st.sidebar.write(f"Treino: {METRICAS_FINAIS['treino']} imagens")
+    st.sidebar.write(f"Validação: {METRICAS_FINAIS['validacao']} imagens")
+    st.sidebar.write(f"Acurácia no teste: {METRICAS_FINAIS['acuracia_teste']}")
+    st.sidebar.write(f"Total de imagens no teste: {METRICAS_FINAIS['total_teste']}")
+    st.sidebar.write(f"F1-score macro: {METRICAS_FINAIS['f1_macro']}")
+    st.sidebar.write(f"F1-score ponderado: {METRICAS_FINAIS['f1_ponderado']}")
 
     if device is not None:
         st.sidebar.write(f"Device usado: {device}")
 
+    st.sidebar.divider()
+    st.sidebar.caption(
+        "Dataset final com imagens originais; pastas augmented e YOLO ignoradas; "
+        "duplicatas e conflitos removidos por MD5; auditoria sem duplicatas "
+        "exatas entre treino, validação e teste. O dataset é desbalanceado; "
+        "Cárie teve o menor recall e baixo suporte no teste."
+    )
 
-def mostrar_alerta_confianca(confianca: float) -> None:
-    """Mostra um alerta conforme o nível de confiança da predição."""
-    percentual = confianca * 100
 
-    if confianca >= 0.80:
-        st.success(f"Predição com alta confiança: {percentual:.2f}%")
-    elif confianca >= 0.50:
-        st.warning(f"Predição com confiança moderada: {percentual:.2f}%")
+def mostrar_indicador_probabilidade(probabilidade: float) -> None:
+    """Mostra a probabilidade estimada sem sugerir certeza clínica."""
+    percentual = probabilidade * 100
+
+    if probabilidade >= 0.80:
+        st.success(
+            "Probabilidade estimada pelo modelo entre as classes treinadas: "
+            f"{percentual:.2f}%"
+        )
+    elif probabilidade >= 0.50:
+        st.warning(
+            "Probabilidade estimada pelo modelo entre as classes treinadas: "
+            f"{percentual:.2f}%"
+        )
     else:
-        st.error(f"Predição incerta: {percentual:.2f}%")
+        st.error(
+            "Probabilidade estimada pelo modelo entre as classes treinadas: "
+            f"{percentual:.2f}%"
+        )
 
 
 def mostrar_top3(top3: list[tuple[str, float]]) -> None:
@@ -213,7 +264,7 @@ def mostrar_top3(top3: list[tuple[str, float]]) -> None:
     st.write("**Top 3 classes:**")
 
     for classe, probabilidade in top3:
-        st.write(f"{classe}: {probabilidade * 100:.2f}%")
+        st.write(f"{nome_pt(classe)}: {probabilidade * 100:.2f}%")
         st.progress(probabilidade)
 
 
@@ -222,26 +273,39 @@ def mostrar_descricao_classes() -> None:
     st.subheader("Classes avaliadas")
 
     for classe, descricao in DESCRICAO_CLASSES.items():
-        st.write(f"**{classe}:** {descricao}")
+        st.write(f"**{nome_pt(classe)}:** {descricao}")
+
+
+def mostrar_metodologia_resumida() -> None:
+    """Resume os cuidados metodológicos usados no experimento final."""
+    st.subheader("Cuidados metodológicos")
+    st.write(
+        "O dataset final usou imagens originais disponíveis no Kaggle. Pastas "
+        "augmented e o dataset YOLO foram ignorados para evitar vazamento visual "
+        "e mistura de tarefas. Duplicatas exatas e conflitos de rótulo foram "
+        "removidos por MD5, e a auditoria confirmou ausência de duplicatas "
+        "exatas entre treino, validação e teste."
+    )
+    st.write(
+        "Data augmentation foi aplicado apenas ao conjunto de treino. Validação "
+        "e teste utilizaram somente redimensionamento, conversão para tensor e "
+        "normalização ImageNet."
+    )
 
 
 def main() -> None:
     """Executa a interface Streamlit para demonstração educacional."""
     st.set_page_config(
         page_title="OdontoAI",
-        page_icon="🦷",
         layout="centered",
     )
 
     st.title("OdontoAI - Classificação de Doenças Odontológicas")
     st.write(
-        "Este aplicativo demonstra um modelo de inteligência artificial treinado "
-        "para classificar imagens odontológicas em seis categorias."
+        "MVP/protótipo acadêmico educacional para classificar imagens "
+        "odontológicas em seis categorias treinadas."
     )
-    st.warning(
-        "Este sistema é apenas um apoio educacional e não substitui avaliação "
-        "profissional de um cirurgião-dentista."
-    )
+    st.warning(AVISO_EDUCACIONAL)
 
     try:
         model, checkpoint, device = carregar_modelo()
@@ -277,7 +341,7 @@ def main() -> None:
 
         classes = checkpoint["classes"]
         input_tensor = preparar_tensor(checkpoint, device, imagem)
-        class_idx, classe_prevista, confianca, top3 = predizer_tensor(
+        class_idx, classe_prevista, probabilidade, top3 = predizer_tensor(
             model=model,
             classes=classes,
             input_tensor=input_tensor,
@@ -312,20 +376,17 @@ def main() -> None:
                 st.info("Grad-CAM desativado para economizar processamento.")
 
         st.subheader("Resultado da classificação")
-        st.metric("Classe prevista", classe_prevista)
+        st.metric("Classe prevista", nome_pt(classe_prevista))
         st.metric(
-            "Confiança estimada pelo modelo",
-            f"{confianca * 100:.2f}%",
+            "Probabilidade estimada pelo modelo entre as classes treinadas",
+            f"{probabilidade * 100:.2f}%",
         )
-        st.caption(
-            "A confiança exibida representa a probabilidade estimada pelo modelo "
-            "entre as classes treinadas. Ela não corresponde a uma certeza clínica "
-            "e deve ser interpretada apenas como apoio educacional."
-        )
-        mostrar_alerta_confianca(confianca)
+        st.caption(EXPLICACAO_PROBABILIDADE)
+        mostrar_indicador_probabilidade(probabilidade)
         mostrar_top3(top3)
 
     mostrar_descricao_classes()
+    mostrar_metodologia_resumida()
 
 
 if __name__ == "__main__":

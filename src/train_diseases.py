@@ -55,8 +55,27 @@ def verificar_pastas() -> None:
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def criar_transform() -> transforms.Compose:
-    """Cria o transform sem data augmentation adicional."""
+def criar_transform_treino() -> transforms.Compose:
+    """Cria o transform de treino com data augmentation leve."""
+    return transforms.Compose(
+        [
+            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(degrees=10),
+            transforms.ColorJitter(
+                brightness=0.1,
+                contrast=0.1,
+                saturation=0.1,
+                hue=0.02,
+            ),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=MEAN, std=STD),
+        ]
+    )
+
+
+def criar_transform_avaliacao() -> transforms.Compose:
+    """Cria o transform deterministico para validacao e teste."""
     return transforms.Compose(
         [
             transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
@@ -68,10 +87,11 @@ def criar_transform() -> transforms.Compose:
 
 def criar_dataloaders(device: torch.device) -> tuple[datasets.ImageFolder, datasets.ImageFolder, DataLoader, DataLoader]:
     """Cria datasets e dataloaders de treino e validacao."""
-    transform = criar_transform()
+    transform_treino = criar_transform_treino()
+    transform_avaliacao = criar_transform_avaliacao()
 
-    train_dataset = datasets.ImageFolder(TRAIN_DIR, transform=transform)
-    val_dataset = datasets.ImageFolder(VAL_DIR, transform=transform)
+    train_dataset = datasets.ImageFolder(TRAIN_DIR, transform=transform_treino)
+    val_dataset = datasets.ImageFolder(VAL_DIR, transform=transform_avaliacao)
 
     pin_memory = device.type == "cuda"
 

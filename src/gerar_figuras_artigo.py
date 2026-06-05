@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import json
 
 import matplotlib.pyplot as plt
@@ -281,17 +281,33 @@ def salvar_tabela_metricas(metricas, classes):
     return caminho_saida
 
 
-def salvar_resumo_resultados():
-    """Cria um resumo textual curto dos resultados principais."""
+def formatar_percentual(valor):
+    """Converte uma metrica decimal para percentual com virgula."""
+    return f"{valor * 100:.2f}%".replace(".", ",")
+
+
+def salvar_resumo_resultados(metricas):
+    """Cria um resumo textual a partir de outputs/reports/metricas_teste.json."""
     caminho_saida = ARTIGO_DIR / "resumo_resultados_pt.txt"
+    relatorio = metricas["classification_report"]
+    total_teste = int(metricas["total_imagens_teste"])
+    acuracia = formatar_percentual(metricas["accuracy"])
+    f1_macro = formatar_percentual(relatorio["macro avg"]["f1-score"])
+    f1_ponderado = formatar_percentual(relatorio["weighted avg"]["f1-score"])
+
     texto = (
         "Resumo dos resultados do OdontoAI no conjunto de teste\n\n"
-        "Total de imagens no teste: 1.854\n"
-        "Acurácia no teste: 92,45%\n"
-        "F1-score macro: 91,37%\n"
-        "F1-score ponderado: 92,62%\n"
-        "Maior confusão observada: Tártaro e Gengivite\n\n"
-        "O sistema deve ser utilizado como apoio educacional e não substitui "
+        f"Total de imagens no teste: {total_teste}\n"
+        f"Acurácia no teste: {acuracia}\n"
+        f"F1-score macro: {f1_macro}\n"
+        f"F1-score ponderado: {f1_ponderado}\n\n"
+        "A classe Cárie apresentou o menor recall e baixo suporte no teste, "
+        "o que exige cautela na interpretação dos resultados. O dataset é "
+        "desbalanceado, e as métricas das classes com menos exemplos são mais "
+        "sensíveis a poucos erros.\n\n"
+        "Grad-CAM deve ser interpretado apenas como ferramenta qualitativa de "
+        "apoio à inspeção visual, não como prova de diagnóstico.\n\n"
+        "O sistema é um MVP/protótipo acadêmico educacional e não substitui "
         "a avaliação profissional realizada por cirurgião-dentista."
     )
     caminho_saida.write_text(texto, encoding="utf-8")
@@ -320,7 +336,7 @@ def main():
         salvar_curva_aprendizado(),
         salvar_distribuicao_splits(classes, labels_pt),
         salvar_tabela_metricas(metricas, classes),
-        salvar_resumo_resultados(),
+        salvar_resumo_resultados(metricas),
     ]
 
     print("Arquivos gerados:")

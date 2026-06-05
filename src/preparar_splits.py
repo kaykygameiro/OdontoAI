@@ -1,3 +1,11 @@
+# Script legado de split simples por imagem.
+#
+# Não foi utilizado no experimento final.
+#
+# O pipeline oficial utiliza preparar_splits_por_grupos.py,
+#
+# que agrupa imagens visualmente semelhantes por pHash antes do split.
+
 from pathlib import Path
 import json
 import random

@@ -1,0 +1,40 @@
+# Datasets e artefatos locais
+data/
+models/
+outputs/
+outputs_clean/
+docs/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Variaveis de ambiente
+.env
+.env.*
+
+# Modelos e checkpoints
+*.pth
+*.pt
+*.onnx
+
+# Logs
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
