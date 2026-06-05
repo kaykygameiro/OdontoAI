@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import cv2
 import numpy as np
 import streamlit as st
 import torch
+from matplotlib import colormaps
 from PIL import Image, UnidentifiedImageError
 from torchvision import transforms
 from torchvision.models import resnet50
@@ -205,12 +205,16 @@ def gerar_gradcam(
     imagem_redimensionada = imagem.resize((image_size, image_size))
     imagem_rgb = np.array(imagem_redimensionada)
 
-    heatmap_redimensionado = cv2.resize(heatmap, (image_size, image_size))
-    heatmap_uint8 = np.uint8(255 * heatmap_redimensionado)
-    heatmap_colorido = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
-    heatmap_colorido = cv2.cvtColor(heatmap_colorido, cv2.COLOR_BGR2RGB)
+    heatmap_pil = Image.fromarray(np.uint8(255 * heatmap))
+    heatmap_redimensionado = np.array(
+        heatmap_pil.resize((image_size, image_size), Image.Resampling.BILINEAR)
+    )
+    heatmap_normalizado = heatmap_redimensionado.astype(np.float32) / 255.0
+    heatmap_colorido = colormaps["jet"](heatmap_normalizado)[..., :3]
+    heatmap_colorido = np.uint8(255 * heatmap_colorido)
 
-    return cv2.addWeighted(imagem_rgb, 0.55, heatmap_colorido, 0.45, 0)
+    sobreposicao = (imagem_rgb * 0.55 + heatmap_colorido * 0.45).clip(0, 255)
+    return sobreposicao.astype(np.uint8)
 
 
 def mostrar_sidebar(device: torch.device | None = None) -> None:

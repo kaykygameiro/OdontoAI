@@ -6,6 +6,5 @@ matplotlib
 seaborn
 scikit-learn
 pillow
-opencv-python
 streamlit
 ImageHash
