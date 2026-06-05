@@ -29,11 +29,11 @@ Monta o dataset oficial usando imagens originais e ignorando pastas `augmented` 
 
 `python src/limpar_dataset.py`
 
-Remove duplicatas exatas e conflitos de rotulo com base em MD5.
+Remove duplicatas exatas e conflitos de rótulo com base em MD5.
 
 `python src/preparar_splits_por_grupos.py`
 
-Agrupa imagens visualmente semelhantes por pHash e cria os conjuntos de treino, validacao e teste por grupos visuais.
+Agrupa imagens visualmente semelhantes por pHash e cria os conjuntos de treino, validação e teste por grupos visuais.
 
 `python src/auditar_splits.py`
 
@@ -49,7 +49,7 @@ Treina o modelo ResNet-50 com augmentation apenas no conjunto de treino.
 
 `python src/matriz_confusao.py`
 
-Gera a matriz de confusao e metricas de avaliacao do conjunto de teste.
+Gera a matriz de confusão e métricas de avaliação do conjunto de teste.
 
 `python src/gerar_curva_aprendizado.py`
 
@@ -57,16 +57,15 @@ Gera a curva de aprendizado a partir dos historicos do treinamento.
 
 `python src/gerar_figuras_artigo.py`
 
-Gera figuras auxiliares para apresentacao ou artigo academico.
+Gera figuras auxiliares para apresentação ou artigo acadêmico.
 
 `python src/auditar_gradcam.py`
 
-Gera e audita visualizacoes Grad-CAM para interpretabilidade qualitativa.
+Gera e audita visualizações Grad-CAM para interpretabilidade qualitativa.
 
 `streamlit run src/app.py`
 
-Inicia a interface web local do prototipo.
+Inicia a interface web local do protótipo.
 
-## Observacao sobre arquivos locais
 
-As pastas `data/`, `models/`, `outputs/` e `docs/` nao devem ser enviadas ao GitHub neste momento. Elas ficam locais e sao ignoradas pelo `.gitignore`.
+

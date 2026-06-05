@@ -1,44 +1,49 @@
-# OdontoAI - Classificacao de Imagens Odontologicas
+# OdontoAI - Classificação de Imagens Odontológicas
 
-OdontoAI e um MVP/prototipo academico educacional para classificacao de imagens odontologicas com redes neurais convolucionais, ResNet-50, Streamlit e Grad-CAM.
+OdontoAI é um MVP/protótipo acadêmico educacional para classificação de imagens odontológicas utilizando redes neurais convolucionais, ResNet-50, Streamlit e Grad-CAM.
 
-O projeto organiza um pipeline completo de montagem do dataset, limpeza, divisao em treino/validacao/teste, auditorias contra vazamento de dados, treinamento, avaliacao, geracao de figuras e interface web para inferencia.
+O projeto organiza um pipeline completo de montagem do dataset, limpeza, divisão em treino, validação e teste, auditorias contra vazamento de dados, treinamento, avaliação, geração de figuras e interface web para inferência.
 
 ## Avisos importantes
 
-Este sistema tem finalidade academica e educacional. Ele nao realiza diagnostico clinico e nao substitui a avaliacao profissional de um cirurgiao-dentista.
+Este sistema possui finalidade acadêmica e educacional. Ele não realiza diagnóstico clínico e não substitui a avaliação profissional de um cirurgião-dentista.
 
-Resultados do modelo devem ser interpretados com cautela, especialmente em cenarios reais, bases externas ou imagens com distribuicao diferente da usada no experimento.
+Os resultados do modelo devem ser interpretados com cautela, especialmente em cenários reais, bases externas ou imagens com distribuição diferente daquela utilizada no experimento.
 
 ## Classes avaliadas
 
-| Classe interna | Descricao |
-| --- | --- |
-| Calculus | Tartaro / calculo dentario |
-| Caries | Carie |
-| Gingivitis | Gengivite |
-| Hypodontia | Hipodontia |
-| Mouth_Ulcer | Ulcera bucal |
-| Tooth_Discoloration | Descoloracao dentaria |
+| Classe interna      | Descrição                  |
+| ------------------- | -------------------------- |
+| Calculus            | Tártaro / cálculo dentário |
+| Caries              | Cárie                      |
+| Gingivitis          | Gengivite                  |
+| Hypodontia          | Hipodontia                 |
+| Mouth_Ulcer         | Úlcera bucal               |
+| Tooth_Discoloration | Descoloração dentária      |
 
-## Arquitetura usada
+## Arquitetura utilizada
 
-O modelo final utiliza ResNet-50 com transfer learning.
+O modelo final utiliza a arquitetura ResNet-50 com transfer learning.
 
 O treinamento foi organizado em duas fases:
 
-1. Treinamento inicial da camada final.
+1. Treinamento inicial apenas da camada final.
 2. Ajuste fino da `layer4` e da camada final.
 
-A interpretabilidade visual e feita com Grad-CAM, apenas como apoio qualitativo.
+A interpretabilidade visual é realizada com Grad-CAM, utilizada apenas como ferramenta qualitativa para mostrar as áreas de foco que justificam a classificação do modelo.
+
+## Dataset utilizado
+
+Este projeto utiliza como base o dataset público **Oral Diseases**, disponível no Kaggle:
+
+https://www.kaggle.com/datasets/salmansajid05/oral-diseases
+
+A base original contém imagens odontológicas organizadas em diferentes categorias e também inclui pastas com imagens previamente aumentadas e um subconjunto no formato YOLO. Neste projeto, foram utilizadas apenas as imagens originais disponíveis para a tarefa de classificação multiclasse. As pastas `augmented` e o subconjunto YOLO foram ignorados no experimento final para reduzir o risco de vazamento visual e manter o foco em classificação de imagem inteira.
+
+Após a seleção das imagens originais, o dataset passou por limpeza de duplicatas e conflitos por MD5, agrupamento de imagens visualmente semelhantes por pHash e divisão em treino, validação e teste por grupos visuais.
 
 ## Pipeline oficial
-
-O pipeline final utiliza imagens originais do dataset. Pastas `augmented` do Kaggle foram ignoradas, e o dataset YOLO tambem foi ignorado porque era voltado a deteccao, nao classificacao.
-
-Duplicatas exatas e conflitos foram removidos por MD5. Imagens visualmente semelhantes foram agrupadas por pHash, e o split foi feito por grupos visuais para reduzir risco de vazamento entre treino, validacao e teste.
-
-Data augmentation e aplicado apenas no conjunto de treino. Validacao e teste nao usam augmentation.
+O data augmentation é aplicado apenas ao conjunto de treino. Os conjuntos de validação e teste não utilizam augmentation.
 
 Ordem oficial dos scripts:
 
@@ -57,7 +62,7 @@ python src/auditar_gradcam.py
 streamlit run src/app.py
 ```
 
-## Instalacao
+## Instalação
 
 Crie e ative um ambiente Python. Exemplo com Conda:
 
@@ -67,52 +72,30 @@ conda activate odontoai
 pip install -r requirements.txt
 ```
 
-Tambem e possivel usar `venv`, desde que as dependencias de `requirements.txt` sejam instaladas.
+Também é possível utilizar `venv`, desde que as dependências listadas em `requirements.txt` sejam instaladas.
 
 ## Resultados finais
 
-| Item | Resultado |
-| --- | ---: |
-| Dataset final | 3.507 imagens |
-| Treino | 2.455 imagens |
-| Validacao | 528 imagens |
-| Teste | 524 imagens |
-| Acuracia no teste | 96,18% |
-| F1-score macro | 90,78% |
-| F1-score ponderado | 96,06% |
+| Item               |     Resultado |
+| ------------------ | ------------: |
+| Dataset final      | 3.507 imagens |
+| Treino             | 2.455 imagens |
+| Validação          |   528 imagens |
+| Teste              |   524 imagens |
+| Acurácia no teste  |        96,18% |
+| F1-score macro     |        90,78% |
+| F1-score ponderado |        96,06% |
 
 Auditoria final:
 
-- 0 duplicatas MD5 entre treino, validacao e teste.
-- 0 pares visualmente suspeitos por pHash entre treino, validacao e teste.
+* 0 duplicatas MD5 entre treino, validação e teste.
+* 0 pares visualmente suspeitos por pHash entre treino, validação e teste.
 
-## Limitacoes
+## Limitações
 
-- O sistema nao substitui avaliacao profissional.
-- O dataset e limitado e pode nao representar todos os cenarios clinicos reais.
-- Algumas classes possuem menos exemplos, o que pode afetar recall e generalizacao.
-- A validacao em bases externas ainda e necessaria.
-- Grad-CAM e uma ferramenta qualitativa de interpretabilidade, nao uma prova clinica de diagnostico.
+* O sistema não substitui avaliação profissional.
+* O dataset é limitado e pode não representar todos os cenários clínicos reais.
+* Algumas classes possuem menos exemplos, o que pode afetar recall e generalização.
+* A validação em bases externas ainda é necessária.
+* Grad-CAM é uma ferramenta qualitativa de interpretabilidade, não uma prova clínica de diagnóstico.
 
-## Arquivos nao versionados
-
-As pastas abaixo sao mantidas apenas localmente e nao devem ser enviadas ao GitHub neste momento:
-
-- `data/`: datasets brutos, limpos e divididos.
-- `models/`: checkpoints e modelos treinados.
-- `outputs/`: metricas, matrizes, figuras e resultados gerados.
-- `docs/`: documentacao detalhada e material do artigo, ainda em preparacao.
-
-O arquivo de modelo `.pth` nao faz parte do repositorio. Ele deve ser gerado localmente executando o treinamento (`python src/train_diseases.py`) ou, futuramente, disponibilizado por link externo apropriado.
-
-## Estrutura versionada esperada
-
-Para a publicacao inicial no GitHub, a estrutura versionada deve conter apenas:
-
-```text
-src/
-README.md
-COMANDOS.md
-requirements.txt
-.gitignore
-```
