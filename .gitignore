@@ -1,6 +1,7 @@
 # Datasets e artefatos locais
 data/
-models/
+models/*
+!models/modelo_doencas.pth
 outputs/
 outputs_clean/
 docs/
@@ -26,6 +27,7 @@ __pycache__/
 
 # Modelos e checkpoints
 *.pth
+!models/modelo_doencas.pth
 *.pt
 *.onnx
 
